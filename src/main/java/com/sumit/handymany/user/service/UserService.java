@@ -15,7 +15,10 @@ public class UserService {
     private final UserRepo userRepo;
     private final ModelMapper modelMapper;
 
-    public UserDto completeClientProfile(User user, CompleteClientProfileRequest request) {
+    public UserDto completeClientProfile(Long userId, CompleteClientProfileRequest request) {
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with phone: " + userId));
         user.setName(request.getName());
         user.setGender(request.getGender());
         user.setDateOfBirth(request.getDateOfBirth());

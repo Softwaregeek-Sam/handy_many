@@ -6,14 +6,12 @@ import com.sumit.handymany.job.manager.JobManager;
 import com.sumit.handymany.job.model.dtos.WorkerJobResponseDTO;
 import com.sumit.handymany.job.service.WorkerJobClaimService;
 import com.sumit.handymany.user.dtos.CompleteWorkerProfile;
-import com.sumit.handymany.user.dtos.WorkerDto;
-import com.sumit.handymany.user.dtos.UserDto;
 import com.sumit.handymany.user.dtos.WorkerProfileResponse;
 import com.sumit.handymany.user.service.WorkerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,10 +26,11 @@ public class WorkerController {
     private final JobManager jobManager;
 
     @PostMapping("/complete-worker-profile")
-    public ResponseEntity<ApiResponse> createWorkerProfile(@AuthenticationPrincipal CustomUserDetails userDetails,
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiResponse> createWorkerProfile(@AuthenticationPrincipal Long userId,
                                                            @RequestBody CompleteWorkerProfile request){
         try {
-            WorkerProfileResponse response = workerService.createWorkerProfile(userDetails.getUser(),request);
+            WorkerProfileResponse response = workerService.createWorkerProfile( userId,request);
             return ResponseEntity.ok(new ApiResponse("You can find jobs", response));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -41,11 +40,11 @@ public class WorkerController {
 
     }
     @PostMapping("/claim-job")
+    @PreAuthorize("hasRole('WORKER')")
     public ResponseEntity<ApiResponse> acceptJob(@RequestParam UUID tempRequestId
-    ,@AuthenticationPrincipal CustomUserDetails userDetails){
+    ,@AuthenticationPrincipal Long workerId){
 
         try{
-            Long workerId = userDetails.getUser().getId();
             boolean accepted = workerJobClaimService.acceptJob(tempRequestId, workerId);
 
             if(!accepted){
@@ -59,11 +58,10 @@ public class WorkerController {
     }
 
     @GetMapping("/jobs/{jobId}")
+    @PreAuthorize("hasRole('WORKER')")
     public ResponseEntity<ApiResponse> getMyJob(@PathVariable Long jobId,
-                                                @AuthenticationPrincipal CustomUserDetails userDetails)  {
+                                                @AuthenticationPrincipal Long workerId)  {
         try {
-            Long workerId = userDetails.getUser().getId();
-
             WorkerJobResponseDTO response = jobManager.getJobDetailsForWorker(jobId, workerId);
 
             return ResponseEntity.ok(new ApiResponse("Job fetched successfully", response));

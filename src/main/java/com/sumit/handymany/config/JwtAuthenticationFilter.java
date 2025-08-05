@@ -10,13 +10,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.net.http.HttpHeaders;
+import java.util.List;
+
 
 @Component
 @RequiredArgsConstructor
@@ -29,32 +32,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-       String authHeader = request.getHeader("Authorization");
-       String token = null;
+        String authorizationHeader = request.getHeader("Authorization");
 
-       if(authHeader != null && authHeader.startsWith("Bearer ")){
-            token = authHeader.substring(7);
-       }
+         if(!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+             filterChain.doFilter(request, response);
+             return;
+         }
 
-       if(token != null && SecurityContextHolder.getContext().getAuthentication() == null){
-            String phone = jwtService.extractPhone(token);
+         String token = authorizationHeader.substring(7);
+         if(jwtService.isTokenValid(token)) {
+             String phone = jwtService.extractPhone(token);
+             Long userId = jwtService.extractUserId(token);
+             List<String> roles = jwtService.extractRoles(token);
+
+             var authorities = roles.stream()
+                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                     .toList();
+
+             var authToken = new UsernamePasswordAuthenticationToken(userId, null, authorities);
+             authToken.setDetails(userId);
+             SecurityContextHolder.getContext().setAuthentication(authToken);
 
 
-
-           if (phone != null && jwtService.isTokenValid(token)) {
-               User user = userDetailsService.findUserByPhone(phone); // ⬅ real User entity from DB
-               var userDetails = new CustomUserDetails(user); // ⬅ your full CustomUserDetails object
-               var authToken = new UsernamePasswordAuthenticationToken(
-                       userDetails,
-                       null,
-                       userDetails.getAuthorities()
-               );
-               authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-               SecurityContextHolder.getContext().setAuthentication(authToken);
-           }
-
-       }
-       filterChain.doFilter(request, response);
+         }
+         filterChain.doFilter(request, response);
 
     }
 }

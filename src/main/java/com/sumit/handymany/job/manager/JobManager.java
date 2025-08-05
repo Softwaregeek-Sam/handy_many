@@ -7,6 +7,7 @@ import com.sumit.handymany.job.service.JobService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.AccessDeniedException;
 import java.util.UUID;
 
 @Component
@@ -17,8 +18,8 @@ public class JobManager {
 
         return jobService.matchWorker(request);
     }
-    public ClientJobResponseDTO crateJob(UUID tempRequestId){
-           return jobService.createJobFromMatchRequest(tempRequestId);
+    public ClientJobResponseDTO crateJob(UUID tempRequestId, Long calledId) throws AccessDeniedException {
+           return jobService.createJobFromMatchRequest(tempRequestId, calledId);
     }
 
     public WorkerJobResponseDTO getJobDetailsForWorker(Long jobId, Long workerId) {

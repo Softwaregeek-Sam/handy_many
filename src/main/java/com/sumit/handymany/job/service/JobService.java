@@ -37,9 +37,16 @@ public class JobService {
     }
 
     @Transactional
-    public ClientJobResponseDTO createJobFromMatchRequest(UUID tempRequestId) {
+    public ClientJobResponseDTO createJobFromMatchRequest(UUID tempRequestId, Long callerId) throws AccessDeniedException {
         JobMatchRequest matchRequest = matchRequestRepository.findByTempRequestId(tempRequestId)
                 .orElseThrow(() -> new RuntimeException("Invalid temp ID"));
+
+        if(!matchRequest.getClientId().equals(callerId)){
+            throw new AccessDeniedException("Caller is not the owner of the request");
+        }
+        if (matchRequest.getStatus() == JobMatchStatus.COMPLETED) {
+            throw new IllegalStateException("Job has already been created for this request");
+        }
 
         if (matchRequest.getStatus() != JobMatchStatus.ACCEPTED) {
             throw new IllegalArgumentException("Job was not accepted by any worker");
@@ -64,6 +71,8 @@ public class JobService {
                 .build();
 
         jobRepository.save(job);
+        matchRequest.setStatus(JobMatchStatus.COMPLETED);
+        matchRequestRepository.save(matchRequest);
 
         ClientJobResponseDTO responseDTO =  modelMapper.map(job, ClientJobResponseDTO.class);
         responseDTO.setWorkerId(worker.getId());

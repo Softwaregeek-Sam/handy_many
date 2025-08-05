@@ -22,9 +22,10 @@ public class ClientController {
 
     @PutMapping("/complete-client-profile")
     public ResponseEntity<ApiResponse> completeProfile(@RequestBody CompleteClientProfileRequest request,
-                                                       @AuthenticationPrincipal CustomUserDetails userDetails) {
+                                        @AuthenticationPrincipal  Long userId) {
         try {
-            UserDto userDto = userService.completeClientProfile(userDetails.getUser(), request);
+
+            UserDto userDto = userService.completeClientProfile(userId, request);
             return ResponseEntity.ok(new ApiResponse("Profile Update successfully", userDto));
 
         } catch (Exception e) {

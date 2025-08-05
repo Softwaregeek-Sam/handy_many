@@ -1,11 +1,12 @@
 package com.sumit.handymany.user.dtos;
 
 import com.sumit.handymany.user.enums.Gender;
-import com.sumit.handymany.user.enums.Role;
 import com.sumit.handymany.user.model.Address;
+import com.sumit.handymany.user.model.Role;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class UserDto {
@@ -15,6 +16,6 @@ public class UserDto {
     private Gender gender;
     private LocalDate dateOfBirth;
     private Address address;
-    private  Role role;
+    private List<String> roles;
     private boolean isProfileCompleted;
 }

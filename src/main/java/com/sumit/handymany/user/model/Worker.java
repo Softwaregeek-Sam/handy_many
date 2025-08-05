@@ -35,6 +35,7 @@ public class Worker {
       @ElementCollection
     private List<String> skills;
 
+
       private Double currentLatitude;
       private Double currentLongitude;
 
